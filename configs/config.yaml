@@ -1,0 +1,58 @@
+# Central config. Every script reads this — no hardcoded paths/params elsewhere.
+
+symbols: [BTCUSDT, ETHUSDT, SOLUSDT]
+
+data:
+  market: futures/um           # spot | futures/um  (Binance Vision tree)
+                                # bookTicker (best bid/ask) only exists historically for futures/um on
+                                # Binance Vision -- spot has no historical best-quote dump. See README.
+  start_date: "2024-01-01"
+  end_date: "2024-03-31"
+  raw_dir: data/raw
+  processed_dir: data/processed
+  # Binance Vision only has bookTicker (best bid/ask) historically — no full L2 depth.
+  # See README "Data scope" section.
+  streams: [bookTicker, aggTrades]
+
+features:
+  vol_windows_sec: [10, 30, 60, 300]       # realized vol lookback windows
+  vpin_bucket_volume: 50000                # quote volume per VPIN bucket (USDT)
+  vpin_num_buckets: 50                     # buckets averaged for toxicity estimate
+  spread_rolling_windows_sec: [30, 300]
+  ofi_lookback_ticks: 20                   # order flow imbalance lookback in bookTicker updates
+
+horizons_sec: [30, 300]                    # prediction horizons (30s, 5min) — configurable, not hardcoded
+label_type: direction                      # direction (classification) — also computes fwd return for PnL
+
+walk_forward:
+  train_days: 21
+  val_days: 3
+  test_days: 3
+  step_days: 3                             # how far the window slides each fold
+  purge_sec: 300                           # gap purged between train/val/test to prevent leakage (>= max horizon)
+
+gbm:
+  n_estimators: 2000
+  early_stopping_rounds: 100
+  learning_rate_grid: [0.01, 0.03, 0.05]
+  num_leaves_grid: [15, 31, 63]
+  max_depth_grid: [-1, 6, 8]
+
+nn:
+  lookback: 100                            # number of LOB snapshots fed per sequence
+  architecture: gru                        # gru | cnn | transformer
+  hidden_dim: 64
+  num_layers: 2
+  dropout: 0.2
+  batch_size: 256
+  max_epochs: 50
+  patience: 8
+  lr: 0.001
+
+backtest:
+  taker_fee_bps: 10                        # Binance spot VIP0 taker = 0.10%
+  maker_fee_bps: 10                        # Binance spot VIP0 maker = 0.10% (no BNB discount)
+  slippage_bps: 2                          # extra bps on top of spread-crossing, conservative
+  position_size_usd: 1000
+
+seed: 42
