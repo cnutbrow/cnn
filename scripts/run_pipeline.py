@@ -8,6 +8,10 @@ Usage:
 import argparse
 import subprocess
 import sys
+from pathlib import Path
+
+# ensure repo root is on sys.path regardless of working directory
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from common.config import load_config, resolve
 

@@ -7,6 +7,10 @@ vs which are noise.
 Usage:
     python3 scripts/build_results_table.py
 """
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import pandas as pd
 
 from common.config import resolve
