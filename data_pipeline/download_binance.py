@@ -30,7 +30,7 @@ from common.config import load_config, resolve
 
 BASE_URL = "https://data.binance.vision/data"
 
-# column schemas per stream, per Binance Vision docs (no header row in CSVs)
+# column schemas + dtypes per stream, per Binance Vision docs (no header row in CSVs)
 COLUMNS = {
     "bookTicker": [
         "update_id", "best_bid_price", "best_bid_qty",
@@ -40,6 +40,19 @@ COLUMNS = {
         "agg_trade_id", "price", "quantity", "first_trade_id", "last_trade_id",
         "timestamp", "is_buyer_maker", "is_best_match",
     ],
+}
+
+DTYPES = {
+    "bookTicker": {
+        "update_id": "int64", "best_bid_price": "float64", "best_bid_qty": "float64",
+        "best_ask_price": "float64", "best_ask_qty": "float64",
+        "transaction_time": "int64", "event_time": "int64",
+    },
+    "aggTrades": {
+        "agg_trade_id": "int64", "price": "float64", "quantity": "float64",
+        "first_trade_id": "int64", "last_trade_id": "int64",
+        "timestamp": "int64", "is_buyer_maker": "bool", "is_best_match": "bool",
+    },
 }
 
 # which (market, stream) combos actually exist on Binance Vision
@@ -74,7 +87,8 @@ def download_one(market: str, stream: str, symbol: str, day: str, out_dir: Path)
     with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
         csv_name = zf.namelist()[0]
         with zf.open(csv_name) as f:
-            df = pd.read_csv(f, header=None, names=COLUMNS[stream])
+            df = pd.read_csv(f, header=None, names=COLUMNS[stream],
+                             dtype=DTYPES[stream], low_memory=False)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(out_path, index=False)
     return out_path
