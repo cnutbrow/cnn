@@ -31,7 +31,7 @@ def build_panel(raw_dir, market, symbol) -> pd.DataFrame:
     bt["source"] = "quote"
 
     tr = load_stream(raw_dir, market, "aggTrades", symbol)
-    tr["ts"] = pd.to_datetime(tr["timestamp"], unit="ms", utc=True)
+    tr["ts"] = pd.to_datetime(tr["transact_time"], unit="ms", utc=True)
     tr = tr.sort_values("ts")[["ts", "price", "quantity", "is_buyer_maker"]]
     # convention: is_buyer_maker True => the aggressor was a SELL (hit the bid)
     tr["signed_qty"] = tr["quantity"] * tr["is_buyer_maker"].map({True: -1, False: 1})

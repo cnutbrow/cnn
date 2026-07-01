@@ -51,7 +51,8 @@ DTYPES = {
     "aggTrades": {
         "agg_trade_id": "int64", "price": "float64", "quantity": "float64",
         "first_trade_id": "int64", "last_trade_id": "int64",
-        "timestamp": "int64", "is_buyer_maker": "bool", "is_best_match": "bool",
+        "transact_time": "int64",
+        # is_buyer_maker is "true"/"false" strings — cast after load
     },
 }
 
@@ -87,8 +88,9 @@ def download_one(market: str, stream: str, symbol: str, day: str, out_dir: Path)
     with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
         csv_name = zf.namelist()[0]
         with zf.open(csv_name) as f:
-            df = pd.read_csv(f, header=None, names=COLUMNS[stream],
-                             dtype=DTYPES[stream], low_memory=False)
+            df = pd.read_csv(f, dtype=DTYPES[stream], low_memory=False)
+        if "is_buyer_maker" in df.columns:
+            df["is_buyer_maker"] = df["is_buyer_maker"].map({"true": True, "false": False, True: True, False: False})
     out_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(out_path, index=False)
     return out_path
