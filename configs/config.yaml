@@ -1,13 +1,13 @@
 # Central config. Every script reads this — no hardcoded paths/params elsewhere.
 
-symbols: [BTCUSDT, ETHUSDT, SOLUSDT]
+symbols: [BTCUSDT]             # start with one symbol; add ETHUSDT, SOLUSDT once pipeline is verified
 
 data:
   market: futures/um           # spot | futures/um  (Binance Vision tree)
                                 # bookTicker (best bid/ask) only exists historically for futures/um on
                                 # Binance Vision -- spot has no historical best-quote dump. See README.
   start_date: "2024-01-01"
-  end_date: "2024-03-31"
+  end_date: "2024-01-31"       # one month to start — expand once end-to-end run works
   raw_dir: data/raw
   processed_dir: data/processed
   # Binance Vision only has bookTicker (best bid/ask) historically — no full L2 depth.
@@ -25,28 +25,28 @@ horizons_sec: [30, 300]                    # prediction horizons (30s, 5min) —
 label_type: direction                      # direction (classification) — also computes fwd return for PnL
 
 walk_forward:
-  train_days: 21
+  train_days: 14
   val_days: 3
   test_days: 3
-  step_days: 3                             # how far the window slides each fold
+  step_days: 7                             # fewer, non-overlapping folds over a short date range
   purge_sec: 300                           # gap purged between train/val/test to prevent leakage (>= max horizon)
 
 gbm:
-  n_estimators: 2000
-  early_stopping_rounds: 100
-  learning_rate_grid: [0.01, 0.03, 0.05]
-  num_leaves_grid: [15, 31, 63]
-  max_depth_grid: [-1, 6, 8]
+  n_estimators: 500
+  early_stopping_rounds: 30
+  learning_rate_grid: [0.03, 0.05]        # smaller grid — enough to tune without 27-combo search
+  num_leaves_grid: [15, 31]
+  max_depth_grid: [-1, 6]
 
 nn:
-  lookback: 100                            # number of LOB snapshots fed per sequence
-  architecture: gru                        # gru | cnn | transformer
-  hidden_dim: 64
+  lookback: 50                             # halved — still meaningful context, trains 2x faster
+  architecture: cnn                        # CNN trains ~3x faster than GRU on CPU for same hidden_dim
+  hidden_dim: 32                           # smaller — enough capacity for a first run
   num_layers: 2
   dropout: 0.2
-  batch_size: 256
-  max_epochs: 50
-  patience: 8
+  batch_size: 512                          # larger batch = fewer gradient steps per epoch = faster
+  max_epochs: 20
+  patience: 5
   lr: 0.001
 
 backtest:
